@@ -4,7 +4,7 @@ include $(HCLIB_ROOT)/../modules/bale_actor/inc/hclib_bale_actor.post.mak
 
 SRUN ?= oshrun
 
-TARGETS=main_01 main_02
+TARGETS=main_01 main_02 main_03
 
 all: clean $(TARGETS)
 
