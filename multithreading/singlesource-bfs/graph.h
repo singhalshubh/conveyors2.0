@@ -75,6 +75,9 @@ class GRAPH {
 };
 
 bool GRAPH::insertIntoVisited(VERTEX appPkt) {
+    if(G->find(appPkt) == G->end()) {
+        return false;
+    }
     if(_LOCALE_visited->find(appPkt) == _LOCALE_visited->end()) {
         _LOCALE_visited->insert(appPkt);
         return true;
@@ -89,7 +92,7 @@ void GRAPH::ALLOCATE_GRAPH(CONFIGURATION *cfg) {
     int block_scale = cfg->scale_/2;
     this->block_num_edges_ = (1L << block_scale) * cfg->degree_;
     this->global_num_blocks_ = (1L << (cfg->scale_ - block_scale));
-    _LOCALE_visited = new std::set<VERTEX>;
+    this->_LOCALE_visited = new std::set<VERTEX>;
 }
 
 void GRAPH::DEALLOCATE_GRAPH() {

@@ -68,10 +68,17 @@ int main (int argc, char* argv[]) {
         /*########## Generate and Build Graph ##############*/
         /*#################################################*/
         std::vector<GRAPH*>*_g_list = new std::vector<GRAPH*>; 
-        trng::mt19937 rng;
+        trng::mt19937 rng, rng1;
         rng.seed(0UL + MYTHREAD);
+        rng1.seed(12UL);
+        int max_scale = cfg->scale_;
+        int max_deg = cfg->degree_;
         for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
             GRAPH *g = new GRAPH;
+            std::uniform_int_distribution<int> udist(10, max_scale);
+            cfg->scale_ = udist(rng1);
+            std::uniform_int_distribution<int> udist1(10, max_deg);
+            cfg->degree_ = udist1(rng1);
             g->LOAD_GRAPH(cfg, &rng);
             _g_list->push_back(g);
             #ifdef DEBUG

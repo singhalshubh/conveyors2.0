@@ -53,9 +53,11 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
                         assert(*phase == NO_ROOT_V);
                     #endif
                     for(auto graph: *_g_list) {
-                        EDGE *vertex_set = graph->G->find(u)->second;
-                        for(auto vertex: *vertex_set) {
-                            send(0, vertex, vertex%THREADS);
+                        if(graph->G->find(u) != graph->G->end()) {
+                            EDGE *vertex_set = graph->G->find(u)->second;
+                            for(auto vertex: *vertex_set) {
+                                send(0, vertex, vertex%THREADS);
+                            }
                         }
                     }
                 }
@@ -83,10 +85,12 @@ class GENERATE_RRR {
         }
 
         void PERFORM_GENERATERR(std::vector<GRAPH*>*_g_list) {
-            std::mt19937 rng;
-            rng.seed(0);
-            std::uniform_int_distribution<int> udist(0, (*_g_list)[0]->global_num_nodes);
-            currentFrontier->push(udist(rng));
+            for(auto G: *_g_list) {
+                std::mt19937 rng;
+                rng.seed(0);
+                std::uniform_int_distribution<int> udist(0, G->global_num_nodes);
+                currentFrontier->push(udist(rng));
+            }
             int phase = ROOT_V; // phase ->0 indicates that phase 0 is simple exchange phase.
             uint64_t OR_VAL = 1;
             while(OR_VAL == 1) {
