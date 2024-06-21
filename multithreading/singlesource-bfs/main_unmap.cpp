@@ -25,10 +25,14 @@ extern "C" {
 #include "trng/lcg64.hpp"
 #include "trng/uniform01_dist.hpp"
 #include "trng/uniform_int_dist.hpp"
+#include "trng/mt19937.hpp"
 #include <chrono>
 #include <utility>
 #include <memory>
 #include <sstream>
+
+#define THREADS shmem_n_pes()
+#define MYTHREAD shmem_my_pe()
 
 #ifdef __APPLE__
 #include <libkern/OSByteOrder.h>
@@ -45,8 +49,6 @@ int main (int argc, char* argv[]) {
     static long lock = 0;
     const char *deps[] = { "system", "bale_actor" };
     hclib::launch(deps, 2, [=] {
-
-
         /*MULTITHREADING (derived from Akihiro, Habanero Labs)*/
         int nworkers = hclib_get_num_workers();
         int nlocales = hclib_get_num_locales();
@@ -61,80 +63,37 @@ int main (int argc, char* argv[]) {
         }
 
         /* MASTER: IMM configuration parameters */
-
-        /*########## Generate and Build Graph ##############*/
-        /*#################################################*/
-
         CONFIGURATION *cfg = new CONFIGURATION;
         cfg->GET_ARGS_FROM_CMD(argc, argv);
-
-        GRAPH *g = new GRAPH;
-        g->cfg = cfg;
-        g->LOAD_GRAPH();
-        #ifdef DEBUG
-            g->CHECK_FORMAT();
-        #endif
-
+        /*########## Generate and Build Graph ##############*/
+        /*#################################################*/
+        std::vector<GRAPH*>*_g_list = new std::vector<GRAPH*>; 
+        trng::mt19937 rng;
+        rng.seed(0UL + MYTHREAD);
+        for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
+            GRAPH *g = new GRAPH;
+            g->LOAD_GRAPH(cfg, &rng);
+            _g_list->push_back(g);
+            #ifdef DEBUG
+                g->CHECK_FORMAT();
+            #endif
+        }
         /*#################################################*/
         /*############# IMM Math and time init ####################*/
         /*#################################################*/
-
-        struct timeval tt,rr,tt1,rr1,generateRR_time = {0}, selectSeeds_time = {0};
-        gettimeofday(&tt, NULL);
-        #ifdef DEBUG
-            T0_fprintf(stderr, "STEP 1: Sampling\n");
-        #endif
-
-        generator.seed(0UL);
-        generator.split(2, 1);
-        generator.split(THREADS, MYTHREAD);
-        double l = 1.0;
-        l = l * (1 + 1 / std::log2(g->global_num_nodes));
-        double epsilonPrime =  1.4142135623730951 * cfg->epsilon;
-        double LB = 0;
-        size_t thetaPrimePrevious = 0;
-
-        /*#################################################*/
-        /*############# DATA Structures init ###############*/
-        /*#################################################*/
-
         GENERATE_RRR *sample = new GENERATE_RRR();
-        std::unordered_map<VERTEX, std::set<TAG>*> *visited = new std::unordered_map<VERTEX, std::set<TAG>*>;
-
-        for(int tracker = 1; tracker < std::log2(g->global_num_nodes); ++tracker) {
-            ssize_t thetaPrime = ThetaPrime(tracker, epsilonPrime, l, cfg->k, g->global_num_nodes)/THREADS + 1;
-            size_t delta = thetaPrime - thetaPrimePrevious;
-            #ifdef DEBUG
-                T0_fprintf(stderr, "Delta/PE: %ld\n", delta);
-                gettimeofday(&tt1, NULL);
-            #endif
-            sample->PERFORM_GENERATERR(g, visited, delta, thetaPrimePrevious);  
-            sample->CLEAR_GENERATERR();
-
-            thetaPrimePrevious += delta;
-        }
-        size_t thetaLocal = Theta(cfg->epsilon, l, cfg->k, LB, g->global_num_nodes)/THREADS + 1;
-        #ifdef DEBUG
-            T0_fprintf(stderr, "\nThetaFinal/PE: %ld\n", thetaLocal - thetaPrimePrevious);
-            T0_fprintf(stderr, "final,STEP 2: Generate RR final\n");
-            gettimeofday(&tt1, NULL);
-        #endif
-        if (thetaLocal > thetaPrimePrevious) {
-            size_t final_delta = thetaLocal - thetaPrimePrevious;
-            sample->PERFORM_GENERATERR(g, visited, final_delta, thetaPrimePrevious);
-            sample->CLEAR_GENERATERR();
-        }
-        gettimeofday(&rr, NULL);
-        timersub(&rr, &tt, &rr);
-        T0_fprintf(stderr, "Total Time: %8.3lf seconds\n", rr.tv_sec + (double) rr.tv_usec/(double)1000000);
         
-        lgp_barrier();
-        delete visited;
+        double t1 = wall_seconds();
+
+        sample->PERFORM_GENERATERR(_g_list);  
+        T0_fprintf(stderr, "Multi-source Time: %8.3lf seconds\n", wall_seconds() - t1);
+        
         sample->DELETE_GENERATERR();
         delete sample;
-        g->DEALLOCATE_GRAPH();
-        delete g;
-        delete cfg;
+        for(auto g: *_g_list) {
+            g->DEALLOCATE_GRAPH();
+        }
+        delete _g_list;
     });
     lgp_finalize();
     return EXIT_SUCCESS;

@@ -6,13 +6,13 @@ PAPI_ROOT=/usr/local/pace-apps/manual/packages/papi/7.0.1/usr/local
 
 SRUN ?= oshrun
 
-TARGETS= clean main_map main_unmap
+TARGETS= clean main_unmap
 
 
 all: $(TARGETS)
 
 %: %.cpp
-	$(CXX) -g -O3 -std=c++11 -DUSE_SHMEM=1 -I$(TRNG_ROOT)/include -L$(TRNG_ROOT)/build/trng -I./agl $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@ $^ $(HCLIB_LDLIBS) -lspmat -lconvey -lexstack -llibgetput -lhclib_bale_actor -ltrng4 -lhwloc -loshmem -lm
+	$(CXX) -g -O3 -std=c++11 -DUSE_SHMEM=1 -I$(TRNG_ROOT)/include -L$(TRNG_ROOT)/build/trng $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@ $^ $(HCLIB_LDLIBS) -lspmat -lconvey -lexstack -llibgetput -lhclib_bale_actor -ltrng4 -lm
 
 clean:
 	rm -f $(TARGETS)
