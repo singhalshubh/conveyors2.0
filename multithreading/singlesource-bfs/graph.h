@@ -117,8 +117,11 @@ void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
                 genSelector->send(0, pckt, pckt.dst % THREADS);
             }
         }
+        fprintf(stderr, "Hey\n");
         genSelector->done(0);
     });
+    lgp_barrier();
+    delete genSelector;
 }
 
 void GRAPH::LOAD_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
