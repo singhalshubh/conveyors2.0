@@ -85,11 +85,18 @@ class GENERATE_RRR {
         }
 
         void PERFORM_GENERATERR(std::vector<GRAPH*>*_g_list) {
-            for(auto G: *_g_list) {
-                std::mt19937 rng;
-                rng.seed(0);
-                std::uniform_int_distribution<int> udist(0, G->global_num_nodes);
-                currentFrontier->push(udist(rng));
+            for(auto graph: *_g_list) {
+                uint64_t max_size = 0;
+                uint64_t vertex = 0;
+                if(MYTHREAD == 0) {
+                    for(auto v: *(graph->G)) {
+                        max_size = std::max(v.second->size(), max_size);
+                        vertex = v.first;
+                    }
+                }
+                lgp_barrier();
+                uint64_t vertex_glb = lgp_reduce_add_l(vertex);
+                currentFrontier->push(vertex_glb);
             }
             int phase = ROOT_V; // phase ->0 indicates that phase 0 is simple exchange phase.
             uint64_t OR_VAL = 1;

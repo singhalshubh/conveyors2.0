@@ -1,9 +1,6 @@
 #define VERTEX uint64_t
 #define EDGE std::set<VERTEX>
 
-#define STORE 1
-#define NO_STORE 0
-
 #define ASSERT_WITH_MESSAGE(condition, message)\
    (!(condition)) ?\
       (std::cerr << "Assertion failed: (" << #condition << "), "\
@@ -15,45 +12,11 @@
 struct fileAppPacket {
     VERTEX src;
     VERTEX dst;
-    bool type;
 };
 
 class IMMpckt {
     public: 
         VERTEX dest_vertex;
-};
-
-class FileSelector: public hclib::Selector<1, fileAppPacket> {
-    std::unordered_map<VERTEX, EDGE*> *adjacencyMap;
-    CONFIGURATION *cfg;
-
-    void process(fileAppPacket appPkt, int sender_rank) {
-        if(appPkt.type == STORE) {
-            if(adjacencyMap->find(appPkt.src) != adjacencyMap->end()) {
-                EDGE *e = adjacencyMap->find(appPkt.src)->second;
-                if(e->find(appPkt.dst) == e->end()) {
-                    e->insert(appPkt.dst);
-                }
-            }
-            else {
-                EDGE* e = new EDGE;
-                e->insert(appPkt.dst);
-                adjacencyMap->insert(std::make_pair(appPkt.src, e));
-            }
-        }
-        else {
-            if(adjacencyMap->find(appPkt.dst) == adjacencyMap->end()) {
-                EDGE* e = new EDGE;
-                adjacencyMap->insert(std::make_pair(appPkt.dst, e));
-            }
-        }
-    }
-
-public:
-    FileSelector(std::unordered_map<VERTEX, EDGE*> *_adjacencyMap, CONFIGURATION *_cfg): 
-            hclib::Selector<1, fileAppPacket>(true), adjacencyMap(_adjacencyMap), cfg(_cfg) {
-        mb[0].process = [this](fileAppPacket appPkt, int sender_rank) { this->process(appPkt, sender_rank); };
-    }
 };
 
 class GRAPH {
@@ -101,33 +64,36 @@ void GRAPH::DEALLOCATE_GRAPH() {
 }
 
 void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
-    FileSelector* genSelector = new FileSelector(this->G, cfg);
-    hclib::finish([=]() {
-        for (size_t block = MYTHREAD; block < global_num_blocks_; block += THREADS) {
-            trng::uniform_int_dist udist(0, global_num_nodes-1);
-            for (size_t m = 0; m < block_num_edges_; m++) {
-                VERTEX u = udist(*rng);
-                VERTEX v = udist(*rng);
-                fileAppPacket pckt;
-                pckt.dst = u;
-                pckt.src = v;
-                pckt.type = STORE;
-                genSelector->send(0, pckt, pckt.src % THREADS);
-                pckt.type = NO_STORE;
-                genSelector->send(0, pckt, pckt.dst % THREADS);
+    for (size_t block = MYTHREAD; block < global_num_blocks_; block += THREADS) {
+        trng::uniform_int_dist udist(0, global_num_nodes-1);
+        for (size_t m = 0; m < block_num_edges_; m++) {
+            VERTEX u = udist(*rng);
+            VERTEX v = udist(*rng);
+            fileAppPacket pckt;
+            pckt.dst = u;
+            pckt.src = v;
+            pckt.src += pckt.src % THREADS;
+            pckt.src = pckt.src % global_num_nodes;
+            if(G->find(pckt.src) != G->end()) {
+                EDGE *e = G->find(pckt.src)->second;
+                if(e->find(pckt.dst) == e->end()) {
+                    e->insert(pckt.dst);
+                }
             }
+            else {
+                EDGE* e = new EDGE;
+                e->insert(pckt.dst);
+                G->insert(std::make_pair(pckt.src, e));
+            }   
         }
-        fprintf(stderr, "Hey\n");
-        genSelector->done(0);
-    });
-    lgp_barrier();
-    delete genSelector;
+    }
 }
 
 void GRAPH::LOAD_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
     this->ALLOCATE_GRAPH(cfg);
     this->READ_GRAPH(cfg, rng);
     this->STATS_OF_FILE();
+    this->CHECK_FORMAT();
 }
 
 void GRAPH::STATS_OF_FILE() {
