@@ -55,13 +55,13 @@ int main (int argc, char* argv[]) {
         hclib_locale_t *locales = hclib_get_all_locales();
         for (int i = 0; i < nlocales; i++) {
             hclib_locale_t l = locales[i];
-            //fprintf(stderr, "locale%d: %s\n", i, l.lbl);
+            //T0_fprintf(stderr, "locale%d: %s\n", i, l.lbl);
             if (i == 1) {
                 nic = &locales[i];
                 //fprintf(stderr, "%s is assigned to NIC (Communication+General Worker)\n", l.lbl);
             }
         }
-
+        T0_fprintf(stderr, "App: #PEs: %ld\n", THREADS);
         /* MASTER: IMM configuration parameters */
         CONFIGURATION *cfg = new CONFIGURATION;
         cfg->GET_ARGS_FROM_CMD(argc, argv);

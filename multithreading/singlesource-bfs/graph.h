@@ -34,18 +34,15 @@ class GRAPH {
         void READ_GRAPH(CONFIGURATION*, trng::mt19937 *);
         void STATS_OF_FILE();
         void CHECK_FORMAT();
-        bool insertIntoVisited(VERTEX);
+        int insertIntoVisited(VERTEX);
 };
 
-bool GRAPH::insertIntoVisited(VERTEX appPkt) {
+int GRAPH::insertIntoVisited(VERTEX appPkt) {
     if(G->find(appPkt) == G->end()) {
-        return false;
+        return 0;
     }
-    if(_LOCALE_visited->find(appPkt) == _LOCALE_visited->end()) {
-        _LOCALE_visited->insert(appPkt);
-        return true;
-    }
-    return false;
+    _LOCALE_visited->find(appPkt);
+    return 1;
 }
 
 void GRAPH::ALLOCATE_GRAPH(CONFIGURATION *cfg) {
@@ -74,6 +71,7 @@ void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
             pckt.src = v;
             pckt.src += pckt.src % THREADS;
             pckt.src = pckt.src % global_num_nodes;
+            _LOCALE_visited->insert(pckt.src);
             if(G->find(pckt.src) != G->end()) {
                 EDGE *e = G->find(pckt.src)->second;
                 if(e->find(pckt.dst) == e->end()) {
