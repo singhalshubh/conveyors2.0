@@ -45,62 +45,65 @@ extern "C" {
 #include "graph.h"
 #include "generateRR.h"
 
+void set_locales() {
+    int nlocales = hclib_get_num_locales();
+    hclib_locale_t *locales = hclib_get_all_locales();
+    for (int i = 0; i < nlocales; i++) {
+        hclib_locale_t l = locales[i];
+        //fprintf(stderr, "locale%d: %s (%p)\n", i, l.lbl, l);
+        if (i == 1) {
+            nic = &locales[i];
+            //fprintf(stderr, "%s is assigned to NIC (Communication+General Worker)\n", l.lbl);
+        }
+    }
+}
+
 int main (int argc, char* argv[]) {
-    static long lock = 0;
     const char *deps[] = { "system", "bale_actor" };
     hclib::launch(deps, 2, [=] {
-        /*MULTITHREADING (derived from Akihiro, Habanero Labs)*/
-        int nworkers = hclib_get_num_workers();
-        int nlocales = hclib_get_num_locales();
-        hclib_locale_t *locales = hclib_get_all_locales();
-        for (int i = 0; i < nlocales; i++) {
-            hclib_locale_t l = locales[i];
-            //T0_fprintf(stderr, "locale%d: %s\n", i, l.lbl);
-            if (i == 1) {
-                nic = &locales[i];
-                //fprintf(stderr, "%s is assigned to NIC (Communication+General Worker)\n", l.lbl);
+        set_locales();
+        hclib::async_at([=] {
+            T0_fprintf(stderr, "App: #PEs: %ld\n", THREADS);
+            /* MASTER: IMM configuration parameters */
+            CONFIGURATION *cfg = new CONFIGURATION;
+            cfg->GET_ARGS_FROM_CMD(argc, argv);
+            /*########## Generate and Build Graph ##############*/
+            /*#################################################*/
+            std::vector<GRAPH*>*_g_list = new std::vector<GRAPH*>; 
+            trng::mt19937 rng, rng1;
+            rng.seed(0UL + MYTHREAD);
+            rng1.seed(12UL);
+            int max_scale = cfg->scale_;
+            int max_deg = cfg->degree_;
+            for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
+                GRAPH *g = new GRAPH;
+                std::uniform_int_distribution<int> udist(10, max_scale);
+                cfg->scale_ = udist(rng1);
+                std::uniform_int_distribution<int> udist1(10, max_deg);
+                cfg->degree_ = udist1(rng1);
+                g->LOAD_GRAPH(cfg, &rng);
+                _g_list->push_back(g);
+                #ifdef DEBUG
+                    g->CHECK_FORMAT();
+                #endif
             }
-        }
-        T0_fprintf(stderr, "App: #PEs: %ld\n", THREADS);
-        /* MASTER: IMM configuration parameters */
-        CONFIGURATION *cfg = new CONFIGURATION;
-        cfg->GET_ARGS_FROM_CMD(argc, argv);
-        /*########## Generate and Build Graph ##############*/
-        /*#################################################*/
-        std::vector<GRAPH*>*_g_list = new std::vector<GRAPH*>; 
-        trng::mt19937 rng, rng1;
-        rng.seed(0UL + MYTHREAD);
-        rng1.seed(12UL);
-        int max_scale = cfg->scale_;
-        int max_deg = cfg->degree_;
-        for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
-            GRAPH *g = new GRAPH;
-            std::uniform_int_distribution<int> udist(10, max_scale);
-            cfg->scale_ = udist(rng1);
-            std::uniform_int_distribution<int> udist1(10, max_deg);
-            cfg->degree_ = udist1(rng1);
-            g->LOAD_GRAPH(cfg, &rng);
-            _g_list->push_back(g);
-            #ifdef DEBUG
-                g->CHECK_FORMAT();
-            #endif
-        }
-        /*#################################################*/
-        /*############# IMM Math and time init ####################*/
-        /*#################################################*/
-        GENERATE_RRR *sample = new GENERATE_RRR();
-        
-        double t1 = wall_seconds();
+            /*#################################################*/
+            /*############# IMM Math and time init ####################*/
+            /*#################################################*/
+            GENERATE_RRR *sample = new GENERATE_RRR();
+            
+            double t1 = wall_seconds();
 
-        sample->PERFORM_GENERATERR(_g_list);  
-        T0_fprintf(stderr, "Multi-source Time: %8.3lf seconds\n", wall_seconds() - t1);
-        
-        sample->DELETE_GENERATERR();
-        delete sample;
-        for(auto g: *_g_list) {
-            g->DEALLOCATE_GRAPH();
-        }
-        delete _g_list;
+            sample->PERFORM_GENERATERR(_g_list);  
+            T0_fprintf(stderr, "Multi-source Time: %8.3lf seconds\n", wall_seconds() - t1);
+            
+            sample->DELETE_GENERATERR();
+            delete sample;
+            for(auto g: *_g_list) {
+                g->DEALLOCATE_GRAPH();
+            }
+            delete _g_list;
+        }, nic);
     });
     lgp_finalize();
     return EXIT_SUCCESS;
