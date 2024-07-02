@@ -90,6 +90,7 @@ int main (int argc, char* argv[]) {
             /*#################################################*/
             /*############# IMM Math and time init ####################*/
             /*#################################################*/
+            lgp_barrier();
             GENERATE_RRR *sample = new GENERATE_RRR();
             
             double t1 = wall_seconds();

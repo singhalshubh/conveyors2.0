@@ -36,7 +36,6 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
                 hclib::async([=, &_checkpoint] {  _checkpoint[7] = (*_g_list)[7]->insertIntoVisited(appPkt); });
                 hclib::async([=, &_checkpoint] {  _checkpoint[8] = (*_g_list)[8]->insertIntoVisited(appPkt); });
                 hclib::async([=, &_checkpoint] {  _checkpoint[9] = (*_g_list)[9]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[10] = (*_g_list)[10]->insertIntoVisited(appPkt); });
             });
             bool res = false;
             for(int tracker = 0; tracker < _g_list->size(); tracker++) {
