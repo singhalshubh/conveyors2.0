@@ -6,7 +6,7 @@ PAPI_ROOT=/usr/local/pace-apps/manual/packages/papi/7.0.1/usr/local
 
 SRUN ?= oshrun
 
-TARGETS= clean main_unmap
+TARGETS= clean main_01 main_02
 
 
 all: $(TARGETS)

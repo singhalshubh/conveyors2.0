@@ -20,25 +20,20 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
         std::queue<VERTEX>*nextFrontier;
         int *phase;
 
-        void process(VERTEX appPkt, int sender_rank) {            
-            // there is a tag which is will be used first to locate the BFS record of that TAG.
-            // if vertex is found, don't insert else insert.
-            // This requires numOfSources BFS mulit-sources, which can be done all in parallel with guaranteed mutual exclusion. 
-            int _checkpoint[10] = {-1};
+        void process(VERTEX appPkt, int sender_rank) {
+            int _checkpoint[_g_list->size()] = {-1};
             hclib::finish([=, &_checkpoint] {
-                hclib::async([=, &_checkpoint] {  _checkpoint[0] = (*_g_list)[0]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[1] = (*_g_list)[1]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[2] = (*_g_list)[2]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[3] = (*_g_list)[3]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[4] = (*_g_list)[4]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[5] = (*_g_list)[5]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[6] = (*_g_list)[6]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[7] = (*_g_list)[7]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[8] = (*_g_list)[8]->insertIntoVisited(appPkt); });
-                hclib::async([=, &_checkpoint] {  _checkpoint[9] = (*_g_list)[9]->insertIntoVisited(appPkt); });
+                for(int i = 0; i < _g_list->size(); i++) {
+                    int *tracker = new int;
+                    *tracker = i;
+                    hclib::async([=, &_checkpoint] {  
+                        _checkpoint[*tracker] = (*_g_list)[*tracker]->insertIntoVisited(appPkt); 
+                    });
+                }
             });
             bool res = false;
             for(int tracker = 0; tracker < _g_list->size(); tracker++) {
+                assert(_checkpoint[tracker] != -1);
                 res |= _checkpoint[tracker];
             }
             if(res) {nextFrontier->push(appPkt);}
@@ -49,9 +44,7 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
                 VERTEX u = currentFrontier->front();
                 currentFrontier->pop();
                 if(*phase == ROOT_V) {
-                    if(u % THREADS == MYTHREAD) {
-                        send(0, u, MYTHREAD);
-                    }
+                    send(0, u, u%THREADS);
                 }
                 else {
                     #ifdef DEBUG
@@ -89,12 +82,23 @@ class GENERATE_RRR {
             nextFrontier = new std::queue<VERTEX>;
         }
 
-        void PERFORM_GENERATERR(std::vector<GRAPH*>*_g_list) {
-            for(auto graph: *_g_list) {
-                for(auto v: *(graph->G)) {
-                    currentFrontier->push(v.first);
+        void PERFORM_GENERATERR(std::vector<GRAPH*>*_g_list, CONFIGURATION *cfg) {
+            if(MYTHREAD == 0) {
+                for(auto graph: *_g_list) {
+                    uint64_t max_size = 0;
+                    uint64_t vertex;
+                    for(auto v: *(graph->G)) {
+                        if(max_size < v.second->size()) {
+                            max_size = v.second->size();
+                            vertex = v.first;
+                        }
+                    }
+                    currentFrontier->push(vertex);
+                    break;
                 }
             }
+            lgp_barrier();
+            double t1 = wall_seconds();
             int phase = ROOT_V; // phase ->0 indicates that phase 0 is simple exchange phase.
             uint64_t OR_VAL = 1;
             while(OR_VAL == 1) {
@@ -112,6 +116,13 @@ class GENERATE_RRR {
                 std::swap(currentFrontier, nextFrontier);
                 phase = NO_ROOT_V;
             }
+            lgp_barrier();
+            if(MYTHREAD == 0) {
+                FILE *fp = fopen(cfg->filename, "a");
+                fprintf(fp, "%f\n", wall_seconds() - t1);
+                fclose(fp);
+            }
+            lgp_barrier();
         }
 
         void DELETE_GENERATERR() {
