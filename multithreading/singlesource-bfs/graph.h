@@ -90,13 +90,13 @@ void GRAPH::ALLOCATE_GRAPH(CONFIGURATION *cfg) {
     this->block_num_edges_ = (1L << block_scale) * cfg->degree_;
     this->global_num_blocks_ = (1L << (cfg->scale_ - block_scale));
     this->_LOCALE_visited = new std::set<VERTEX>;
-    for(int pe = 0; pe < THREADS; pe++) {
-        if(pe%2 == 0) {
-            for(int tracker = 0; tracker < (global_num_nodes * cfg->corrupted_)/100; tracker++) {
-                _LOCALE_visited->insert(global_num_nodes+tracker);
-            }
-        }
-    }
+    // for(int pe = 0; pe < THREADS; pe++) {
+    //     if(pe%2 == 0) {
+    //         for(int tracker = 0; tracker < ((global_num_nodes/THREADS) * cfg->corrupted_)/100; tracker++) {
+    //             _LOCALE_visited->insert(global_num_nodes+tracker);
+    //         }
+    //     }
+    // }
 }
 
 void GRAPH::DEALLOCATE_GRAPH() {

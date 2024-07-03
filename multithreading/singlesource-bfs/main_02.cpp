@@ -62,7 +62,6 @@ int main (int argc, char* argv[]) {
     hclib::launch(deps, 2, [=] {
         set_locales();
         hclib::async_at([=] {
-            T0_fprintf(stderr, "App: #PEs: %ld\n", THREADS);
             /* MASTER: IMM configuration parameters */
             CONFIGURATION *cfg = new CONFIGURATION;
             cfg->GET_ARGS_FROM_CMD(argc, argv);
@@ -79,7 +78,7 @@ int main (int argc, char* argv[]) {
             else {
                 max_scale = cfg->scale_ - std::log2(hclib_get_num_workers());
             }
-
+            T0_fprintf(stderr, "App: #PEs: %ld, scale: %ld\n", THREADS, max_scale);
             int max_deg = cfg->degree_;
             for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
                 GRAPH *g = new GRAPH;
