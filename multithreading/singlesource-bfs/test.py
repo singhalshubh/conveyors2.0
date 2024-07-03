@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 
 def main():
-    workers = [1, 2, 4, 6, 12, 24]
+    workers = [1, 2, 4, 6, 12, 18, 24]
     corrupt = [0, 10, 30, 50, 70]
     
     c_0 = []
