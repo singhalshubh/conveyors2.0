@@ -30,7 +30,7 @@ extern "C" {
 #include <utility>
 #include <memory>
 #include <sstream>
-
+#define DEBUG
 #define THREADS shmem_n_pes()
 #define MYTHREAD shmem_my_pe()
 
@@ -44,19 +44,6 @@ extern "C" {
 #include "graph.h"
 #include "generateRR.h"
 
-void set_locales() {
-    int nlocales = hclib_get_num_locales();
-    hclib_locale_t *locales = hclib_get_all_locales();
-    for (int i = 0; i < nlocales; i++) {
-        hclib_locale_t l = locales[i];
-        //fprintf(stderr, "locale%d: %s (%p)\n", i, l.lbl, l);
-        if (i == 1) {
-            nic = &locales[i];
-            //fprintf(stderr, "%s is assigned to NIC (Communication+General Worker)\n", l.lbl);
-        }
-    }
-}
-
 int main (int argc, char* argv[]) {
     const char *deps[] = { "system", "bale_actor" };
     hclib::launch(deps, 2, [=] {
@@ -69,15 +56,13 @@ int main (int argc, char* argv[]) {
             /*########## Generate and Build Graph ##############*/
             /*#################################################*/
             std::vector<GRAPH*>*_g_list = new std::vector<GRAPH*>; 
-            trng::mt19937 rng, rng1;
-            rng.seed(0UL + MYTHREAD);
-            rng1.seed(12UL);
-            cfg->scale_ -= std::log2(hclib_get_num_workers());
+
+            cfg->scale_ -= std::round(std::log2f(hclib_get_num_workers()));
             T0_fprintf(stderr, "App: #PEs: %ld, scale: %ld\n", THREADS, cfg->scale_);
             
             for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
                 GRAPH *g = new GRAPH;
-                g->LOAD_GRAPH(cfg, &rng);
+                g->LOAD_GRAPH(cfg, tracker);
                 _g_list->push_back(g);
                 #ifdef DEBUG
                     g->CHECK_FORMAT();
@@ -100,42 +85,3 @@ int main (int argc, char* argv[]) {
     lgp_finalize();
     return EXIT_SUCCESS;
 }
-
-// class TestSelector: public hclib::Selector<1, int64_t> {
-//     int64_t *sum;
-
-//     int64_t fib(int n) {
-//         if (n == 0) {
-//             return 0;
-//         } else if (n == 1) {
-//             return 1;
-//         } else {
-//             return fib(n - 1) + fib(n - 2);
-//         }
-//     }
-
-//     int64_t fib_async(int n) {
-//         if (n == 0) {
-//             return 0;
-//         } else if (n == 1) {
-//             return 1;
-//         } else {
-//             int64_t ret1, ret2;
-//             hclib::finish([=, &ret1, &ret2] {
-//                 hclib::async([=, &ret1]{ ret1 = fib(n - 1); });
-//                 hclib::async([=, &ret2]{ ret2 = fib(n - 2); });
-//             });
-//             return ret1 + ret2;
-//         }
-//     }
-
-//     void process(int64_t pkt, int sender_rank) {
-//         *sum = *sum + fib_async(pkt);
-//     }
-
-//   public:
-
-//     TestSelector(int64_t *_sum): sum(_sum) {
-//         mb[0].process = [this](int64_t pkt, int sender_rank) { this->process(pkt, sender_rank); };
-//     }
-// };

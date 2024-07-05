@@ -98,3 +98,14 @@ void report(std::string error_msg) {
     fprintf(stderr, "%s\n", error_msg.c_str());
     exit(-1);
 }
+
+void set_locales() {
+    int nlocales = hclib_get_num_locales();
+    hclib_locale_t *locales = hclib_get_all_locales();
+    for (int i = 0; i < nlocales; i++) {
+        hclib_locale_t l = locales[i];
+        if (i == 1) {
+            nic = &locales[i];
+        }
+    }
+}

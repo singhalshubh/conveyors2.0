@@ -66,8 +66,8 @@ class GRAPH {
 
         void ALLOCATE_GRAPH(CONFIGURATION*);
         void DEALLOCATE_GRAPH();
-        void LOAD_GRAPH(CONFIGURATION*, trng::mt19937 *);
-        void READ_GRAPH(CONFIGURATION*, trng::mt19937 *);
+        void LOAD_GRAPH(CONFIGURATION*, uint64_t kRandSeed);
+        void READ_GRAPH(CONFIGURATION*, uint64_t kRandSeed);
         void STATS_OF_FILE();
         void CHECK_FORMAT();
         int insertIntoVisited(VERTEX);
@@ -92,13 +92,6 @@ void GRAPH::ALLOCATE_GRAPH(CONFIGURATION *cfg) {
     this->block_num_edges_ = (1L << block_scale) * cfg->degree_;
     this->global_num_blocks_ = (1L << (cfg->scale_ - block_scale));
     this->_LOCALE_visited = new std::set<VERTEX>;
-    // for(int pe = 0; pe < THREADS; pe++) {
-    //     if(pe%2 == 0) {
-    //         for(int tracker = 0; tracker < ((global_num_nodes/THREADS) * cfg->corrupted_)/100; tracker++) {
-    //             _LOCALE_visited->insert(global_num_nodes+tracker);
-    //         }
-    //     }
-    // }
 }
 
 void GRAPH::DEALLOCATE_GRAPH() {
@@ -107,16 +100,18 @@ void GRAPH::DEALLOCATE_GRAPH() {
 }
 
 
-void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
+void GRAPH::READ_GRAPH(CONFIGURATION *cfg, uint64_t kRandSeed) {
     FileSelector* genSelector = new FileSelector(this->G);
     hclib::finish([=]() {
         const float A = 0.57f, B = 0.19f, C = 0.19f;
+        std::mt19937 rng;
         for (size_t block = MYTHREAD; block < global_num_blocks_; block += THREADS) {
+            rng.seed(kRandSeed + block);
             for (size_t m = 0; m < block_num_edges_; m++) {
                 VERTEX src = 0;
                 VERTEX dst = 0;
                 for (uint64_t depth=0; depth < cfg->scale_; depth++) {
-                    float rand_point = udist(*rng);
+                    float rand_point = udist(rng);
                     src = src << 1;
                     dst = dst << 1;
                     if (rand_point < A+B) {
@@ -132,8 +127,8 @@ void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
                     }
                 }
                 fileAppPacket pckt;
-                pckt.dst = src;
-                pckt.src = dst;
+                pckt.src = src;
+                pckt.dst = dst;
                 pckt.type = STORE;
                 genSelector->send(0, pckt, pckt.src % THREADS);
                 pckt.type = NO_STORE;
@@ -145,9 +140,9 @@ void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
     delete genSelector;
 }
 
-void GRAPH::LOAD_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
+void GRAPH::LOAD_GRAPH(CONFIGURATION *cfg, uint64_t kRandSeed) {
     this->ALLOCATE_GRAPH(cfg);
-    this->READ_GRAPH(cfg, rng);
+    this->READ_GRAPH(cfg, kRandSeed);
     this->STATS_OF_FILE();
     this->CHECK_FORMAT();
 }
@@ -155,7 +150,9 @@ void GRAPH::LOAD_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
 void GRAPH::STATS_OF_FILE() {
     uint64_t local_nodes = G->size();
     uint64_t num_nodes = lgp_reduce_add_l(local_nodes);
-    T0_fprintf(stderr, "Total Number of Nodes in G: %llu\n", num_nodes);
+    #ifdef DEBUG
+        T0_fprintf(stderr, "Total Number of Nodes in G: %llu\n", num_nodes);
+    #endif
     
     uint64_t local_edges = 0;
     for(auto x: *G) {
@@ -163,7 +160,9 @@ void GRAPH::STATS_OF_FILE() {
     }
     uint64_t num_edges = lgp_reduce_add_l(local_edges);
     global_num_edges = num_edges;
-    T0_fprintf(stderr, "Total Number of Edges in G: %llu\n", num_edges);
+    #ifdef DEBUG
+        T0_fprintf(stderr, "Total Number of Edges in G: %llu\n", num_edges);
+    #endif
 }
     
 void GRAPH::CHECK_FORMAT() {
