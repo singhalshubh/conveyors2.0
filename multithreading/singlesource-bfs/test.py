@@ -7,46 +7,102 @@ import sys
 
 def main():
     workers = [1, 2, 4, 6, 12, 18, 24]
-    corrupt = [0, 10, 30, 50, 70]
-    
-    c_0 = []
+
+    c_8_pe1 = []
+    c_8_pe2 = []
     for w in workers:
-        with open("./bin/a" + str(w) + ".txt", "r") as file:
-            c_0.append(float(file.read()))
-
-    with open("./bin/b1.txt", "r") as file:
-            c_00 = float(file.read())
-    # c_10 = []
-    # for w in workers:
-    #     with open("./bin/a" + "10-"  + str(w) + ".txt", "r") as file:
-    #         c_10.append(float(file.read()))
-
-    # c_30 = []
-    # for w in workers:
-    #     with open("./bin/a" + "30-"  + str(w) + ".txt", "r") as file:
-    #         c_30.append(float(file.read()))
+        df = 0
+        with open("./bin/a" + str(w) + "-8.txt", "r") as file:
+            for line in file.readlines():
+                if line != '':
+                    df += float(line)
+            df = df//5
+            c_8_pe1.append(df)
     
-    # c_50 = []
-    # for w in workers:
-    #     with open("./bin/a" + "50-"  + str(w) + ".txt", "r") as file:
-    #         c_50.append(float(file.read()))
+  
+    df = 0
+    with open("./bin/b-8.txt", "r") as file:
+        for line in file.readlines():
+            if line != '':
+                df += float(line)
+        df = df//5
+        c_8_pe2.append(df)
 
-    # c_70 = []
-    # for w in workers:
-    #     with open("./bin/a" + "70-"  + str(w) + ".txt", "r") as file:
-    #         c_70.append(float(file.read()))
 
-    plt.plot(workers, c_0, marker = '', color='tab:brown', label='0%')
-    plt.plot(1, c_00, 'o')
-    # plt.plot(workers, c_10, marker = 's', color='tab:orange', label='10%')
-    # plt.plot(workers, c_30, marker = 'o', color='tab:blue', label='30%')
-    # plt.plot(workers, c_50, marker = '^', color='tab:green', label='50%')
-    # plt.plot(workers, c_70, marker = '*', color='tab:red', label='70%')
+    c_16_pe1 = []
+    c_16_pe2 = []
+    for w in workers:
+        df = 0
+        with open("./bin/a" + str(w) + "-16.txt", "r") as file:
+            for line in file.readlines():
+                if line != '':
+                    df += float(line)
+            df = df//5
+            c_16_pe1.append(df)
+    
+
+    df = 0
+    with open("./bin/b-16.txt", "r") as file:
+        for line in file.readlines():
+            if line != '':
+                df += float(line)
+        df = df//5
+        c_16_pe2.append(df)
+
+    c_32_pe1 = []
+    c_32_pe2 = []
+    for w in workers:
+        df = 0
+        with open("./bin/a" + str(w) + "-32.txt", "r") as file:
+            for line in file.readlines():
+                if line != '':
+                    df += float(line)
+            df = df//5
+            c_32_pe1.append(df)
+    
+    
+    df = 0
+    with open("./bin/b-32.txt", "r") as file:
+        for line in file.readlines():
+            if line != '':
+                df += float(line)
+        df = df//5
+        c_32_pe2.append(df)
+
+
+    c_64_pe1 = []
+    c_64_pe2 = []
+    for w in workers:
+        df = 0
+        with open("./bin/a" + str(w) + "-64.txt", "r") as file:
+            for line in file.readlines():
+                if line != '':
+                    df += float(line)
+            df = df//5
+            c_64_pe1.append(df)
+    
+    
+    df = 0
+    with open("./bin/b-64.txt", "r") as file:
+        for line in file.readlines():
+            if line != '':
+                df += float(line)
+        df = df//5
+        c_64_pe2.append(df)
+
+    plt.plot(workers, c_8_pe1, marker = 's', color='tab:red', label='8 nodes')
+    plt.plot(1, c_8_pe2, 's', color='tab:red')
+    plt.plot(workers, c_16_pe1, marker = 'o', color='tab:orange', label='16 nodes')
+    plt.plot(1, c_16_pe2, 'o', color='tab:orange')
+    plt.plot(workers, c_32_pe1, marker = '^', color='tab:blue', label='32 nodes')
+    plt.plot(1, c_32_pe2, '^', color='tab:blue')
+    plt.plot(workers, c_64_pe1, marker = '*',color='tab:green', label='64 nodes')
+    plt.plot(1, c_64_pe2, '*', color='tab:green')
     plt.xlabel("Number of HClib workers", fontsize="x-large")
     plt.ylabel("Execution time (in seconds)", fontsize="x-large")
-    plt.title("256 cores BFS single-source, 10 graphs", fontsize="x-large")
+    plt.title("BFS single-source multi-graph, scale = " + str(sys.argv[1]), fontsize="x-large")
     plt.legend(fontsize="x-large")
-    plt.savefig("pic.png", dpi = 600)
+    plt.savefig("pic_" + str(sys.argv[1]) + ".png", dpi = 600)
 
 if __name__=="__main__": 
     main()

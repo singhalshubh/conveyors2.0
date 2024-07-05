@@ -56,21 +56,27 @@ int main (int argc, char* argv[]) {
         trng::mt19937 rng, rng1;
         rng.seed(0UL + MYTHREAD);
         rng1.seed(12UL);
+        
         int max_scale = cfg->scale_;
         T0_fprintf(stderr, "App: #PEs: %ld, scale: %ld\n", THREADS, max_scale);
         int max_deg = cfg->degree_;
+        
         for(uint64_t tracker = 0; tracker < cfg->numberOfGraphs; tracker++) {
             GRAPH *g = new GRAPH;
-            std::uniform_int_distribution<int> udist(10, max_scale);
-            cfg->scale_ = udist(rng1);
-            std::uniform_int_distribution<int> udist1(10, max_deg);
-            cfg->degree_ = udist1(rng1);
+            // std::uniform_int_distribution<int> udist(10, max_scale);
+            // cfg->scale_ = udist(rng1);
+            
+            // std::uniform_int_distribution<int> udist1(10, max_deg);
+            // cfg->degree_ = udist1(rng1);
+            
             g->LOAD_GRAPH(cfg, &rng);
             _g_list->push_back(g);
+            
             #ifdef DEBUG
                 g->CHECK_FORMAT();
             #endif
         }
+
         /*#################################################*/
         /*############# IMM Math and time init ####################*/
         /*#################################################*/

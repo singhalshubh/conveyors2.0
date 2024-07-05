@@ -18,6 +18,8 @@ struct fileAppPacket {
 #define STORE 1
 #define NO_STORE 0
 
+std::uniform_real_distribution<float> udist(0, 1.0f);
+
 class IMMpckt {
     public: 
         VERTEX dest_vertex;
@@ -109,15 +111,12 @@ void GRAPH::READ_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
     FileSelector* genSelector = new FileSelector(this->G);
     hclib::finish([=]() {
         const float A = 0.57f, B = 0.19f, C = 0.19f;
-        std::mt19937 rng;
-        std::uniform_real_distribution<float> udist(0, 1.0f);
         for (size_t block = MYTHREAD; block < global_num_blocks_; block += THREADS) {
-            rng.seed(kRandSeed + block);
             for (size_t m = 0; m < block_num_edges_; m++) {
                 VERTEX src = 0;
                 VERTEX dst = 0;
                 for (uint64_t depth=0; depth < cfg->scale_; depth++) {
-                    float rand_point = udist(rng);
+                    float rand_point = udist(*rng);
                     src = src << 1;
                     dst = dst << 1;
                     if (rand_point < A+B) {
@@ -156,7 +155,7 @@ void GRAPH::LOAD_GRAPH(CONFIGURATION *cfg, trng::mt19937 *rng) {
 void GRAPH::STATS_OF_FILE() {
     uint64_t local_nodes = G->size();
     uint64_t num_nodes = lgp_reduce_add_l(local_nodes);
-    //T0_fprintf(stderr, "Total Number of Nodes in G: %llu\n", num_nodes);
+    T0_fprintf(stderr, "Total Number of Nodes in G: %llu\n", num_nodes);
     
     uint64_t local_edges = 0;
     for(auto x: *G) {
@@ -164,7 +163,7 @@ void GRAPH::STATS_OF_FILE() {
     }
     uint64_t num_edges = lgp_reduce_add_l(local_edges);
     global_num_edges = num_edges;
-    //T0_fprintf(stderr, "Total Number of Edges in G: %llu\n", num_edges);
+    T0_fprintf(stderr, "Total Number of Edges in G: %llu\n", num_edges);
 }
     
 void GRAPH::CHECK_FORMAT() {

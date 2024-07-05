@@ -22,16 +22,13 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
 
         void process(VERTEX appPkt, int sender_rank) {
             int _checkpoint[_g_list->size()] = {-1};
-            hclib::finish([=, &_checkpoint] {
-                for(int i = 0; i < _g_list->size(); i++) {
-                    int *tracker = new int;
-                    *tracker = i;
-                    _checkpoint[*tracker] = (*_g_list)[*tracker]->insertIntoVisited(appPkt); 
-                }
-            });
+            for(int i = 0; i < _g_list->size(); i++) {
+                int *tracker = new int;
+                *tracker = i;
+                _checkpoint[*tracker] = (*_g_list)[*tracker]->insertIntoVisited(appPkt); 
+            }
             bool res = false;
             for(int tracker = 0; tracker < _g_list->size(); tracker++) {
-                assert(_checkpoint[tracker] != -1);
                 res |= _checkpoint[tracker];
             }
             if(res) {nextFrontier->push(appPkt);}
