@@ -20,18 +20,16 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
         std::queue<VERTEX>*nextFrontier;
         int *phase;
         uint64_t *NUMBER_OF_PULLS;
+        std::vector<bool> *_checkpoint;
 
         void process(VERTEX appPkt, int sender_rank) {
             //(*NUMBER_OF_PULLS)++;
-            int _checkpoint[_g_list->size()] = {-1};
             for(int i = 0; i < _g_list->size(); i++) {
-                int *tracker = new int;
-                *tracker = i;
-                _checkpoint[*tracker] = (*_g_list)[*tracker]->insertIntoVisited(appPkt);    
+                (*_checkpoint)[i] = (*_g_list)[i]->insertIntoVisited(appPkt);
             }
             bool res = false;
             for(int tracker = 0; tracker < _g_list->size(); tracker++) {
-                res |= _checkpoint[tracker];
+                res |= (*_checkpoint)[tracker];
             }
             if(res) {nextFrontier->push(appPkt);}
         }
@@ -61,9 +59,9 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
 
 public:
     RRSelector(std::vector<GRAPH*>*g_list, std::queue<VERTEX>*_currentFrontier, 
-        std::queue<VERTEX>*_nextFrontier, int *_phase, uint64_t *_NUMBER_OF_PULLS): 
+        std::queue<VERTEX>*_nextFrontier, int *_phase, uint64_t *_NUMBER_OF_PULLS, std::vector<bool> *checkpoint): 
             hclib::Selector<1, VERTEX>(true), _g_list(g_list), currentFrontier(_currentFrontier), 
-            nextFrontier(_nextFrontier), phase(_phase), NUMBER_OF_PULLS(_NUMBER_OF_PULLS) {
+            nextFrontier(_nextFrontier), phase(_phase), NUMBER_OF_PULLS(_NUMBER_OF_PULLS), _checkpoint(checkpoint) {
         mb[0].process = [this](VERTEX appPkt, int sender_rank) { this->process(appPkt, sender_rank); };
     }
 };
@@ -99,10 +97,14 @@ class GENERATE_RRR {
             int phase = ROOT_V; // phase ->0 indicates that phase 0 is simple exchange phase.
             uint64_t OR_VAL = 1;
             uint64_t TOTAL_PULLS = 0;
+            std::vector<bool> *_checkpoint = new std::vector<bool>;
+            for(int i = 0; i < _g_list->size(); i++) {
+                _checkpoint->push_back(false);
+            } 
             while(OR_VAL == 1) {
                 uint64_t *NUMBER_OF_PULLS = new uint64_t;
                 *NUMBER_OF_PULLS = 0;
-                RRSelector rrselector(_g_list, currentFrontier, nextFrontier, &phase, NUMBER_OF_PULLS);
+                RRSelector rrselector(_g_list, currentFrontier, nextFrontier, &phase, NUMBER_OF_PULLS, _checkpoint);
                 hclib::finish([&rrselector] {
                     rrselector.DO_ITR_LEVEL_ASYNC();
                     rrselector.done(0);
