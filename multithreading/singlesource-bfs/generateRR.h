@@ -25,17 +25,23 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
         void process(VERTEX appPkt, int sender_rank) {
             //(*NUMBER_OF_PULLS)++;
             hclib::finish([=] {
-                uint64_t nChunks = _g_list->size()/hclib_get_num_workers() + 1;
-                for(uint64_t block = 0; block < nChunks; block++) {
+                uint64_t nChunks = _g_list->size()/hclib_get_num_workers();
+                uint64_t worker;
+                for(worker = 0; worker < hclib_get_num_workers() - 1; worker++) {
                     // Inside each block we have 
                     hclib::async([=] {  
-                        uint64_t start = nChunks*block;
-                        uint64_t end = std::min(start + nChunks, _g_list->size());
+                        uint64_t start = worker*nChunks;
+                        uint64_t end = start + nChunks;
                         for (uint64_t tracker = start; tracker < end; tracker++) {
                             (*_checkpoint)[hclib_get_current_worker()] = (*_checkpoint)[hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
                         }
                     });
-                 }
+                }
+                uint64_t start = worker*nChunks;
+                uint64_t end = _g_list->size();
+                for (uint64_t tracker = start; tracker < end; tracker++) {
+                    (*_checkpoint)[hclib_get_current_worker()] = (*_checkpoint)[hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
+                }
             });
             bool res = false;
             for(int tracker = 0; tracker < _checkpoint->size(); tracker++) {
