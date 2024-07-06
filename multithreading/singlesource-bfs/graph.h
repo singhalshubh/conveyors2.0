@@ -70,18 +70,18 @@ class GRAPH {
         void READ_GRAPH(CONFIGURATION*, uint64_t kRandSeed);
         void STATS_OF_FILE();
         void CHECK_FORMAT();
-        int insertIntoVisited(VERTEX);
+        bool insertIntoVisited(VERTEX);
 };
 
-int GRAPH::insertIntoVisited(VERTEX appPkt) {
+bool GRAPH::insertIntoVisited(VERTEX appPkt) {
     if(G->find(appPkt) == G->end()) {
-        return 0;
+        return false;
     }
     if(_LOCALE_visited->find(appPkt) == _LOCALE_visited->end()) {
         _LOCALE_visited->insert(appPkt);
-        return 1;
+        return true;
     }
-    return 0;
+    return false;
 }
 
 void GRAPH::ALLOCATE_GRAPH(CONFIGURATION *cfg) {

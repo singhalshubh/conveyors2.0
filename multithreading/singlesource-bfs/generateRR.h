@@ -25,15 +25,22 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
         void process(VERTEX appPkt, int sender_rank) {
             //(*NUMBER_OF_PULLS)++;
             hclib::finish([=] {
-                for(int i = 0; i < _g_list->size(); i++) {
+                uint64_t nChunks = _g_list->size()/hclib_get_num_workers() + 1;
+                for(uint64_t block = 0; block < nChunks; block++) {
+                    // Inside each block we have 
                     hclib::async([=] {  
-                        (*_checkpoint)[i] = (*_g_list)[i]->insertIntoVisited(appPkt); 
+                        uint64_t start = nChunks*block;
+                        uint64_t end = std::min(start + nChunks, _g_list->size());
+                        for (uint64_t tracker = start; tracker < end; tracker++) {
+                            (*_checkpoint)[hclib_get_current_worker()] = (*_checkpoint)[hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
+                        }
                     });
-                }
+                 }
             });
             bool res = false;
-            for(int tracker = 0; tracker < _g_list->size(); tracker++) {
+            for(int tracker = 0; tracker < _checkpoint->size(); tracker++) {
                 res |= (*_checkpoint)[tracker];
+                (*_checkpoint)[tracker] = false;
             }
             if(res) {nextFrontier->push(appPkt);}
         }
@@ -102,8 +109,8 @@ class GENERATE_RRR {
             uint64_t OR_VAL = 1;
             uint64_t TOTAL_PULLS = 0;
             std::vector<bool> *_checkpoint = new std::vector<bool>;
-            for(int i = 0; i < _g_list->size(); i++) {
-                _checkpoint->push_back(0);
+            for(int i = 0; i < hclib_get_num_workers(); i++) {
+                _checkpoint->push_back(false);
             } 
             while(OR_VAL == 1) {
                 uint64_t *NUMBER_OF_PULLS = new uint64_t;
