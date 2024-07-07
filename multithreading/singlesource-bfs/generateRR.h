@@ -59,7 +59,12 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
                         if(graph->G->find(u) != graph->G->end()) {
                             EDGE *vertex_set = graph->G->find(u)->second;
                             for(auto vertex: *vertex_set) {
-                                send(0, vertex, vertex%THREADS);
+                                if(vertex%THREADS == MYTHREAD) {
+                                    (*_checkpoint)[vertex][0] = true;
+                                }
+                                else {
+                                    send(0, vertex, vertex%THREADS);
+                                }
                             }
                         }
                     }
@@ -122,6 +127,7 @@ class GENERATE_RRR {
                     rrselector.DO_ITR_LEVEL_ASYNC();
                     rrselector.done(0);
                 });
+                lgp_barrier();
                 for(VERTEX v = 0; v < _checkpoint.size(); v++) {
                     bool res = false;
                     for(int w = 0; w < hclib_get_num_workers(); w++) {
