@@ -60,7 +60,7 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
                             EDGE *vertex_set = graph->G->find(u)->second;
                             for(auto vertex: *vertex_set) {
                                 if(vertex%THREADS == MYTHREAD) {
-                                    (*_checkpoint)[vertex][0] = true;
+                                    (*_checkpoint)[vertex][0] = graph->checkVisited(vertex);
                                 }
                                 else {
                                     send(0, vertex, vertex%THREADS);
