@@ -20,11 +20,13 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
         std::queue<VERTEX>*nextFrontier;
         int *phase;
         uint64_t *NUMBER_OF_PULLS;
-        std::vector<bool> *_checkpoint;
+        std::vector<std::vector<bool>> *_checkpoint;
 
         void process(VERTEX appPkt, int sender_rank) {
             //(*NUMBER_OF_PULLS)++;
-            hclib::finish([=] {
+            #ifdef NO_ESCAPING
+            hclib::finish([=]{
+            #endif
                 uint64_t nChunks = _g_list->size()/hclib_get_num_workers();
                 uint64_t worker;
                 for(worker = 0; worker < hclib_get_num_workers() - 1; worker++) {
@@ -33,22 +35,19 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
                         uint64_t start = worker*nChunks;
                         uint64_t end = start + nChunks;
                         for (uint64_t tracker = start; tracker < end; tracker++) {
-                            (*_checkpoint)[hclib_get_current_worker()] = (*_checkpoint)[hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
+                            (*_checkpoint)[appPkt][hclib_get_current_worker()] = (*_checkpoint)[appPkt][hclib_get_current_worker()] 
+                                | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
                         }
                     });
                 }
                 uint64_t start = worker*nChunks;
                 uint64_t end = _g_list->size();
                 for (uint64_t tracker = start; tracker < end; tracker++) {
-                    (*_checkpoint)[hclib_get_current_worker()] = (*_checkpoint)[hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
+                    (*_checkpoint)[appPkt][hclib_get_current_worker()] = (*_checkpoint)[appPkt][hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
                 }
+            #ifdef NO_ESCAPING
             });
-            bool res = false;
-            for(int tracker = 0; tracker < _checkpoint->size(); tracker++) {
-                res |= (*_checkpoint)[tracker];
-                (*_checkpoint)[tracker] = false;
-            }
-            if(res) {nextFrontier->push(appPkt);}
+            #endif
         }
 
         public : void DO_ITR_LEVEL_ASYNC() {
@@ -76,7 +75,7 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
 
 public:
     RRSelector(std::vector<GRAPH*>*g_list, std::queue<VERTEX>*_currentFrontier, 
-        std::queue<VERTEX>*_nextFrontier, int *_phase, uint64_t *_NUMBER_OF_PULLS, std::vector<bool> *checkpoint): 
+        std::queue<VERTEX>*_nextFrontier, int *_phase, uint64_t *_NUMBER_OF_PULLS, std::vector<std::vector<bool>> *checkpoint): 
             hclib::Selector<1, VERTEX>(true), _g_list(g_list), currentFrontier(_currentFrontier), 
             nextFrontier(_nextFrontier), phase(_phase), NUMBER_OF_PULLS(_NUMBER_OF_PULLS), _checkpoint(checkpoint) {
         mb[0].process = [this](VERTEX appPkt, int sender_rank) { this->process(appPkt, sender_rank); };
@@ -114,20 +113,31 @@ class GENERATE_RRR {
             int phase = ROOT_V; // phase ->0 indicates that phase 0 is simple exchange phase.
             uint64_t OR_VAL = 1;
             uint64_t TOTAL_PULLS = 0;
-            std::vector<bool> *_checkpoint = new std::vector<bool>;
-            for(int i = 0; i < hclib_get_num_workers(); i++) {
-                _checkpoint->push_back(false);
+            std::vector<std::vector<bool>> _checkpoint;
+            for(int t = 0; t < (1 << cfg->scale_); t++) {
+                _checkpoint.push_back(std::vector<bool>());
+                for(int w = 0; w < hclib_get_num_workers(); w++) {
+                    _checkpoint[t].push_back(false);
+                }
             } 
             while(OR_VAL == 1) {
                 uint64_t *NUMBER_OF_PULLS = new uint64_t;
                 *NUMBER_OF_PULLS = 0;
-                RRSelector rrselector(_g_list, currentFrontier, nextFrontier, &phase, NUMBER_OF_PULLS, _checkpoint);
+                RRSelector rrselector(_g_list, currentFrontier, nextFrontier, &phase, NUMBER_OF_PULLS, &_checkpoint);
                 hclib::finish([&rrselector] {
                     rrselector.DO_ITR_LEVEL_ASYNC();
                     rrselector.done(0);
                 });
-                TOTAL_PULLS += lgp_reduce_add_l(*NUMBER_OF_PULLS);
+                for(int v = 0; v < _checkpoint.size(); v++) {
+                    bool res = false;
+                    for(int w = 0; w < hclib_get_num_workers(); w++) {
+                        res |= _checkpoint[v][w];
+                        _checkpoint[v][w] = false;
+                    }
+                    if(res) {nextFrontier->push(v);}
+                }
                 #ifdef DEBUG
+                    TOTAL_PULLS += lgp_reduce_add_l(*NUMBER_OF_PULLS);
                     uint64_t tot_size = lgp_reduce_add_l(nextFrontier->size());
                     T0_fprintf(stderr, "Size of next Frontier (total for all pes): %ld\n", tot_size);
                 #endif
