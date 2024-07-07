@@ -7,8 +7,8 @@
 #SBATCH -qinferno        
 #SBATCH -ojob.out
 
-# workers=(1 2 4 8 16)
-workers=(2)
+workers=(1 2 4 8)
+#workers=(2)
 
 nodes=$1
 scale=$2
@@ -16,16 +16,16 @@ graph_no=$3
 for w in ${workers[@]}
 do
     #HCLIB_WORKERS=$w srun -N 16 -n $((256/$w)) ./main_02 -s 16 -d 100 -c $c -g 10 -o $PWD/bin/a$c-$w.txt
-    for t in 0 1 2 3 4;
-    do
+    # for t in 0 1 2 3 4;
+    # do
         HCLIB_WORKERS=$w srun -N $nodes -n $((16*$nodes/$w)) ./main_01 -s $scale -d 30 -g $graph_no -o $PWD/bin/a$w-$nodes.txt
-    done
+    # done
 
 done
 
 # for t in 0 1 2 3 4;
 # do
-#     HCLIB_WORKERS=1 srun -N $nodes -n $((16*$nodes)) ./main_03 -s $scale -d 30 -g $graph_no -o $PWD/bin/b-$nodes.txt
+    HCLIB_WORKERS=1 srun -N $nodes -n $((16*$nodes)) ./main_03 -s $scale -d 30 -g $graph_no -o $PWD/bin/b-$nodes.txt
 # done
 
 # for nodes in 8 16 32 64;

@@ -24,30 +24,24 @@ class RRSelector: public hclib::Selector<1, VERTEX> {
 
         void process(VERTEX appPkt, int sender_rank) {
             //(*NUMBER_OF_PULLS)++;
-            #ifdef NO_ESCAPING
-            hclib::finish([=]{
-            #endif
-                uint64_t nChunks = _g_list->size()/hclib_get_num_workers();
-                uint64_t worker;
-                for(worker = 0; worker < hclib_get_num_workers() - 1; worker++) {
-                    // Inside each block we have 
-                    hclib::async([=] {  
-                        uint64_t start = worker*nChunks;
-                        uint64_t end = start + nChunks;
-                        for (uint64_t tracker = start; tracker < end; tracker++) {
-                            (*_checkpoint)[appPkt][hclib_get_current_worker()] = (*_checkpoint)[appPkt][hclib_get_current_worker()] 
-                                | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
-                        }
-                    });
-                }
-                uint64_t start = worker*nChunks;
-                uint64_t end = _g_list->size();
-                for (uint64_t tracker = start; tracker < end; tracker++) {
-                    (*_checkpoint)[appPkt][hclib_get_current_worker()] = (*_checkpoint)[appPkt][hclib_get_current_worker()] | (*_g_list)[tracker]->insertIntoVisited(appPkt); 
-                }
-            #ifdef NO_ESCAPING
-            });
-            #endif
+            uint64_t nChunks = _g_list->size()/hclib_get_num_workers();
+            uint64_t worker;
+            for(worker = 0; worker < hclib_get_num_workers() - 1; worker++) {
+                hclib::async([=] {  
+                    uint64_t start = worker*nChunks;
+                    uint64_t end = start + nChunks;
+                    for (uint64_t tracker = start; tracker < end; tracker++) {
+                        (*_checkpoint)[appPkt][hclib_get_current_worker()] = (*_checkpoint)[appPkt][hclib_get_current_worker()] 
+                            | (*_g_list)[tracker]->checkVisited(appPkt); 
+                    }
+                });
+            }
+            uint64_t start = worker*nChunks;
+            uint64_t end = _g_list->size();
+            for (uint64_t tracker = start; tracker < end; tracker++) {
+                (*_checkpoint)[appPkt][hclib_get_current_worker()] = (*_checkpoint)[appPkt][hclib_get_current_worker()] 
+                | (*_g_list)[tracker]->checkVisited(appPkt); 
+            }
         }
 
         public : void DO_ITR_LEVEL_ASYNC() {
@@ -119,7 +113,7 @@ class GENERATE_RRR {
                 for(int w = 0; w < hclib_get_num_workers(); w++) {
                     _checkpoint[t].push_back(false);
                 }
-            } 
+            }
             while(OR_VAL == 1) {
                 uint64_t *NUMBER_OF_PULLS = new uint64_t;
                 *NUMBER_OF_PULLS = 0;
@@ -128,14 +122,20 @@ class GENERATE_RRR {
                     rrselector.DO_ITR_LEVEL_ASYNC();
                     rrselector.done(0);
                 });
-                for(int v = 0; v < _checkpoint.size(); v++) {
+                for(VERTEX v = 0; v < _checkpoint.size(); v++) {
                     bool res = false;
                     for(int w = 0; w < hclib_get_num_workers(); w++) {
                         res |= _checkpoint[v][w];
                         _checkpoint[v][w] = false;
                     }
-                    if(res) {nextFrontier->push(v);}
+                    if(res) {
+                        for(auto graph: *_g_list) {
+                            graph->insertIntoVisited(v);
+                        }
+                        nextFrontier->push(v);
+                    }
                 }
+                
                 #ifdef DEBUG
                     TOTAL_PULLS += lgp_reduce_add_l(*NUMBER_OF_PULLS);
                     uint64_t tot_size = lgp_reduce_add_l(nextFrontier->size());

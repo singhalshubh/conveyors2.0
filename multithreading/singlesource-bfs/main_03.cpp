@@ -30,7 +30,7 @@ extern "C" {
 #include <utility>
 #include <memory>
 #include <sstream>
-// #define DEBUG
+//#define DEBUG
 #define THREADS shmem_n_pes()
 #define MYTHREAD shmem_my_pe()
 

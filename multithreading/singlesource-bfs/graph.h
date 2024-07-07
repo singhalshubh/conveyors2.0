@@ -71,7 +71,19 @@ class GRAPH {
         void STATS_OF_FILE();
         void CHECK_FORMAT();
         bool insertIntoVisited(VERTEX);
+        bool checkVisited(VERTEX appPkt);
 };
+
+
+bool GRAPH::checkVisited(VERTEX appPkt) {
+    if(G->find(appPkt) == G->end()) {
+        return false;
+    }
+    if(_LOCALE_visited->find(appPkt) == _LOCALE_visited->end()) {
+        return true;
+    }
+    return false;
+}
 
 bool GRAPH::insertIntoVisited(VERTEX appPkt) {
     if(G->find(appPkt) == G->end()) {

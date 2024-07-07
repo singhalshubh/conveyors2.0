@@ -12,7 +12,7 @@ TARGETS= clean main_01 main_02 main_03
 all: $(TARGETS)
 
 %: %.cpp
-	$(CXX) -g -O3 -std=c++11 -DUSE_SHMEM=1 -DNO_ESCAPING -I$(TRNG_ROOT)/include -L$(TRNG_ROOT)/build/trng $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@ $^ $(HCLIB_LDLIBS) -lspmat -lconvey -lexstack -llibgetput -lhclib_bale_actor -ltrng4 -lm
+	$(CXX) -g -O3 -std=c++11 -DUSE_SHMEM=1 -I$(TRNG_ROOT)/include -L$(TRNG_ROOT)/build/trng $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@ $^ $(HCLIB_LDLIBS) -lspmat -lconvey -lexstack -llibgetput -lhclib_bale_actor -ltrng4 -lm
 
 clean:
 	rm -f $(TARGETS)
