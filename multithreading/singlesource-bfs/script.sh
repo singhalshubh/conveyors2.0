@@ -7,10 +7,8 @@
 #SBATCH -qinferno        
 #SBATCH -ojob.out
 
-echo "Started on `/bin/hostname`"   # prints name of compute node job was started on
-cd $SLURM_SUBMIT_DIR 
-
-workers=(1 2 4 8 16)
+# workers=(1 2 4 8 16)
+workers=(2)
 
 nodes=$1
 scale=$2
@@ -25,10 +23,10 @@ do
 
 done
 
-for t in 0 1 2 3 4;
-do
-    HCLIB_WORKERS=1 srun -N $nodes -n $((16*$nodes)) ./main_03 -s $scale -d 30 -g $graph_no -o $PWD/bin/b-$nodes.txt
-done
+# for t in 0 1 2 3 4;
+# do
+#     HCLIB_WORKERS=1 srun -N $nodes -n $((16*$nodes)) ./main_03 -s $scale -d 30 -g $graph_no -o $PWD/bin/b-$nodes.txt
+# done
 
 # for nodes in 8 16 32 64;
 # do
