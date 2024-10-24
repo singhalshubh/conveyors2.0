@@ -21,7 +21,7 @@ Shubhendra Pal Singhal 2024
 #include <iostream>
 
 typedef std::atomic<std::uint64_t> atomic_uint64_t;
-#define DEBUG 0
+#define DEBUG 1
 
 #if DEBUG
 #define SYS_DEBUG
