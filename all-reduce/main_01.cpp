@@ -146,8 +146,12 @@ int main(int argc, char *argv[]) {
         std::vector<uint64_t> *LOCAL_BUFFER = new std::vector<uint64_t>(driver->_dataSize, 1);
         std::vector<uint64_t> *GLOBAL_BUFFER = new std::vector<uint64_t>(driver->_dataSize, 0);
         
-        ALL_REDUCE(GLOBAL_BUFFER, LOCAL_BUFFER, driver->_dataSize, convey);
+        //ALL_REDUCE(GLOBAL_BUFFER, LOCAL_BUFFER, driver->_dataSize, convey);
         
+        double t1 = wall_seconds();
+        GLOBAL_BUFFER = lgp_reduce_add_l(LOCAL_BUFFER);
+        T0_fprintf(stderr, "Time: %8.3f sec\n", wall_seconds() - t1);
+
         for(uint64_t tracker = 0; tracker < driver->_dataSize; tracker++) {
             assert((*GLOBAL_BUFFER)[tracker] == THREADS);
         }

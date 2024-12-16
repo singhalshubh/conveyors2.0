@@ -63,14 +63,14 @@ class AllToAllSelector: public hclib::Selector<1, PACKET> {
         /*####################################################################
         ####### sending the data item to proxy neighbors of Conveyors#########
         ####################################################################*/
-        for(uint64_t data_index = 0; data_index < LOCAL_BUFFER->size(); data_index++) {
-            for(uint64_t pe = 0; pe < THREADS; pe++) {
+        for(uint64_t pe = 0; pe < THREADS; pe++) {
+            for(uint64_t data_index = 0; data_index < LOCAL_BUFFER->size(); data_index++) {
                 PACKET packet(data_index, (*LOCAL_BUFFER)[data_index]);  
                 send(0, packet, pe);
             }
-        }
-        
+        }  
     }
+
 public:
   AllToAllSelector(std::vector<uint64_t> *_GLOBAL_BUFFER, std::vector<uint64_t> *_LOCAL_BUFFER) :
          LOCAL_BUFFER(_LOCAL_BUFFER), GLOBAL_BUFFER(_GLOBAL_BUFFER)   {
