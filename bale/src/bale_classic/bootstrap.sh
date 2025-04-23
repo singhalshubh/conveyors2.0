@@ -1,0 +1,9 @@
+cd libgetput
+autoreconf -fi
+cd ../exstack
+autoreconf -fi
+cd ../convey
+autoreconf -fi
+cd ../spmat
+autoreconf -fi
+cd ..
