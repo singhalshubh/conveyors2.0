@@ -1,15 +1,12 @@
-include $(HCLIB_ROOT)/../modules/bale_actor/inc/hclib_bale_actor.pre.mak
-include $(HCLIB_ROOT)/include/hclib.mak
-include $(HCLIB_ROOT)/../modules/bale_actor/inc/hclib_bale_actor.post.mak
-
+PAPI_ROOT=/usr/local/pace-apps/manual/packages/papi/7.1.0/usr/local
 SRUN ?= oshrun
 
-TARGETS=main_01 main_02 main_03
+TARGETS= clean pe_data data_pe
 
-all: clean $(TARGETS)
+all: $(TARGETS)
 
 %: %.cpp
-	$(CXX) -g -O3 -std=c++17 -DUSE_SHMEM=1 $(HCLIB_CFLAGS) $(HCLIB_LDFLAGS) -o $@ $^ $(HCLIB_LDLIBS) -lspmat -lconvey -lexstack -llibgetput -lhclib_bale_actor -lm
+	${CXX} -g -O3 -std=c++11 -DUSE_SHMEM=1 -ftrapv  -I$(BALE_INSTALL)/include -L$(BALE_INSTALL)/lib -o $@ $^ -I${PAPI_ROOT}/include -L${PAPI_ROOT}/lib -lpapi -lconvey -llibgetput -lspmat -lexstack -lpfm -lm
 
 clean:
 	rm -f $(TARGETS)
