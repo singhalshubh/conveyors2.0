@@ -45,11 +45,11 @@ For installing conveyors and analysing our contributions, stated modules are req
 
 ## Installation
 Deployment and all dependent modules are loaded via a simple script which compiles the conveyors code and builds a library which can be linked at run-time. The default name for the build is `build_oshmem`. For enabling `score-p`, use `scorep-oshcc` and `scorep-oshcxx` for compiling apps. 
-Setup the repository for deriving three conclusions. The first conclusion involves using both official bale repo and our repository, in particular `apps` folder in `conveyors2.0/bale/src/bale_classic/`.
+Setup the repository for deriving three conclusions. The first conclusion involves using both official bale repo and our repository, in particular `apps` folder in `conveyors_prof/bale/src/bale_classic/`.
 ```
-git clone https://github.com/singhalshubh/conveyors2.0
+git clone https://github.com/singhalshubh/conveyors_prof
 git checkout sc25
-cd conveyors2.0/
+cd conveyors_prof/
 source convey-setup.sh
 cd bale/src/bale_classic/apps
 make
