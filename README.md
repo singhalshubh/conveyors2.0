@@ -203,10 +203,11 @@ awk '{
 cat out_1.txt
 ```
 
+# Highlights
+![Memory interference costs relative to ground truth with no aggregation](final_result_c1.png)
+Please reference the detailed analysis and traces to see how we conlcude and reach to this simple demomstration of the bottleneck - memory interference costs, due to interleaving patterns of access of memory of aggregation buffers and user data.
+
 ### Discussion
 - SOTA library, conveyors reveal that with upcoming trends of uniform data distributions and run-time complexities of new algorithms, memory interference will potentially be "next plausible" candidate of bottleneck! To this day, none of the papers report this as a problem, since network costs have always been found to dominate, as a general notion. We promote usage of near-memory specialised devices with frugal cost of adoption and opportunity to hide device latency.
 - Second, for standardization, separation of polling from the network and bifurcating profile as network and memory dominant parts or functions of the entire program are two key factors. Further dig-in for individual profiles for precise understanding is essential. We showcase the effectiveness and simplicity of model and framework. We need more such transparent models for creating a co-design space for aggregation sub-systems.
 - Third, problems lying with termination on scale and programmability are revealed, thereby guiding the HPC community on the performant decisions one should take moving forward. 
-
-
-
