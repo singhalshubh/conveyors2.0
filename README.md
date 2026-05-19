@@ -1,5 +1,8 @@
-# Analysis of Small-Message Aggregation for state-of-art: (I) Conveyors
-In this document, we will explain the reproduction of several figures of the paper. First, we will explain the tree structure and the installation steps. Then, we explain step-by-step procedure on how to achieve all three technical contributions of the paper.
+# Performance Analysis of Conveyors: Memory Dominates?
+This repository pertains to the research paper accepted at HPDC 2026, PERMAVOST workshop. 
+Shubhendra Pal Singhal, Aaron Welch, Oscar Hernandez, Steve Poole, Akihiro Hayashi, and Vivek Sarkar. 2026. Performance Analysis of Conveyors: Memory Dominates?. In The 35th International Symposium on High-Performance Parallel and Distributed Computing (HPDC ’26), July 13–16, 2026, Cleveland, OH, USA. ACM, New York, NY, USA, 8 pages. https://doi.org/10.1145/3806645.3816120
+
+In this research, we will explain the reproduction of several figures of the paper. First, we will explain the tree structure and the installation steps. Then, we explain step-by-step procedure on how to achieve all three technical contributions of the paper.
 
 ## Contributions
 - $\texttt{Instrumentation and Execution Tracing}$ using `Vampir`, `PAPI` and `score-p` in `bale` folder.
@@ -211,3 +214,6 @@ Please reference the detailed analysis and traces in the paper to see how we con
 - SOTA library, conveyors reveal that with upcoming trends of uniform data distributions and run-time complexities of new algorithms, memory interference will potentially be "next plausible" candidate of bottleneck! To this day, none of the papers report this as a problem, since network costs have always been found to dominate, as a general notion. We promote usage of near-memory specialised devices with frugal cost of adoption and opportunity to hide device latency.
 - Second, for standardization, separation of polling from the network and bifurcating profile as network and memory dominant parts or functions of the entire program are two key factors. Further dig-in for individual profiles for precise understanding is essential. We showcase the effectiveness and simplicity of model and framework. We need more such transparent models for creating a co-design space for aggregation sub-systems.
 - Third, problems lying with termination on scale and programmability are revealed, thereby guiding the HPC community on the performant decisions one should take moving forward. 
+
+### Corresponding Author
+Shubhendra Pal Singhal (ssinghal74@gatech.edu)
