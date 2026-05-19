@@ -1,5 +1,6 @@
 # Performance Analysis of Conveyors: Memory Dominates?
-This repository pertains to the research paper accepted at HPDC 2026, PERMAVOST workshop. 
+This repository pertains to the research paper accepted at HPDC 2026, PERMAVOST workshop.
+
 Shubhendra Pal Singhal, Aaron Welch, Oscar Hernandez, Steve Poole, Akihiro Hayashi, and Vivek Sarkar. 2026. Performance Analysis of Conveyors: Memory Dominates?. In The 35th International Symposium on High-Performance Parallel and Distributed Computing (HPDC ’26), July 13–16, 2026, Cleveland, OH, USA. ACM, New York, NY, USA, 8 pages. https://doi.org/10.1145/3806645.3816120
 
 In this research, we will explain the reproduction of several figures of the paper. First, we will explain the tree structure and the installation steps. Then, we explain step-by-step procedure on how to achieve all three technical contributions of the paper.
